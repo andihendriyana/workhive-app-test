@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Jadwal Karyawan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css"> <!-- Pastikan path ini benar -->
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; }
+        .btn-primary { @apply bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-300 ease-in-out; }
+        .btn-action { @apply padding:12px; color:white; font-weight:600; border-radius:.5rem; transition:all .2s ease-in-out; display:flex; align-items:center; justify-content:center; border:none; cursor:pointer; }
+        .btn-action:disabled { @apply bg-gray-400 cursor-not-allowed; }
+    </style>
+</head>
+<body class="bg-gray-50 font-poppins">
+
+    <div class="container mx-auto p-8 max-w-lg">
+        <div class="bg-white p-8 rounded-2xl shadow-lg">
+            <div class="mb-6 text-center">
+                <h1 class="text-3xl font-bold text-gray-800">Upload Jadwal Karyawan</h1>
+                <p class="text-gray-500">Isi formulir di bawah ini untuk mengunggah jadwal kerja.</p>
+            </div>
+
+            <div id="status-message" class="hidden mb-4 p-4 text-sm rounded-lg"></div>
+            
+            <form id="schedule-upload-form" class="space-y-6">
+                <div>
+                    <label for="employee-select" class="block mb-2 text-sm font-medium text-gray-900">Pilih Karyawan</label>
+                    <select id="employee-select" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                        <option value="">Memuat karyawan...</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="schedule-date" class="block mb-2 text-sm font-medium text-gray-900">Tanggal Jadwal</label>
+                    <input type="date" id="schedule-date" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                </div>
+
+                <div class="grid grid-cols-2 gap-6">
+                    <div>
+                        <label for="shift-start-time" class="block mb-2 text-sm font-medium text-gray-900">Waktu Mulai Shift</label>
+                        <input type="time" id="shift-start-time" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                    </div>
+                    <div>
+                        <label for="shift-end-time" class="block mb-2 text-sm font-medium text-gray-900">Waktu Selesai Shift</label>
+                        <input type="time" id="shift-end-time" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                    </div>
+                </div>
+                
+                <div class="pt-4">
+                    <button type="submit" class="w-full btn-action bg-blue-600 hover:bg-blue-700">
+                        <i class="fas fa-upload mr-2"></i> Upload Jadwal
+                    </button>
+                </div>
+            </form>
+
+            <div class="my-8 text-center text-gray-500">
+                — ATAU —
+            </div>
+
+            <div class="space-y-4">
+                <h2 class="text-xl font-bold text-gray-800 text-center">Impor dari Excel</h2>
+                <p class="text-gray-500 text-center text-sm">Unduh template, isi, lalu unggah file Excel Anda.</p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="template_jadwal.xlsx" download class="btn-action bg-gray-300 text-gray-800 hover:bg-gray-400">
+                        <i class="fas fa-download mr-2"></i> Unduh Template
+                    </a>
+                    <label for="excel-file-input" class="btn-action bg-purple-600 hover:bg-purple-700 cursor-pointer">
+                        <i class="fas fa-file-excel mr-2"></i> Pilih File Excel
+                        <input type="file" id="excel-file-input" accept=".xlsx, .xls" class="hidden">
+                    </label>
+                </div>
+                <button id="import-excel-btn" class="w-full btn-action bg-green-600 hover:bg-green-700 hidden">
+                    <i class="fas fa-file-import mr-2"></i> Impor Jadwal dari Excel
+                </button>
+            </div>
+
+            <div class="text-center mt-6">
+                <a href="index.html" class="text-sm text-blue-600 hover:underline">&larr; Kembali ke Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- CDN untuk SheetJS (xlsx) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="schedule-upload.js"></script>
+</body>
+</html>

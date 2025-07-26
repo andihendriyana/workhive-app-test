@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Aplikasi Absensi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Menggunakan font Poppins dari Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Mengatur font Poppins sebagai font default */
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen p-4 sm:p-6">
+    <!-- Kontainer utama untuk form login -->
+    <!-- mx-4 untuk margin horizontal di layar kecil, sm:mx-auto untuk centering di layar sm ke atas -->
+    <!-- p-8 untuk padding, space-y-6 untuk jarak antar elemen vertikal -->
+    <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg mx-4 sm:mx-auto">
+        <!-- Judul halaman login -->
+        <!-- text-3xl di layar kecil, sm:text-4xl dari ukuran sm ke atas -->
+        <h1 class="text-3xl font-bold text-center text-gray-800 sm:text-4xl">WorkHive</h1>
+        <!-- Deskripsi singkat -->
+        <!-- text-sm di layar kecil, sm:text-base dari ukuran sm ke atas -->
+        <p class="text-center text-gray-500 text-sm sm:text-base">Silahkan Login</p>
+        
+        <!-- Form login -->
+        <form id="login-form" class="space-y-6">
+            <div>
+                <label for="email" class="block mb-2 text-sm font-medium text-gray-700">Alamat Email</label>
+                <input type="email" id="email" class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="nama@email.com" required>
+            </div>
+            <div>
+                <label for="password" class="block mb-2 text-sm font-medium text-gray-700">Password</label>
+                <input type="password" id="password" class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="••••••••" required>
+            </div>
+            <!-- Tombol login, lebar penuh di semua ukuran layar -->
+            <button type="submit" class="w-full py-3 px-4 text-white bg-blue-600 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 ease-in-out">Login</button>
+        </form>
+        <!-- Pesan error, awalnya tersembunyi -->
+        <div id="error-message" class="hidden text-center p-3 bg-red-100 text-red-700 rounded-lg"></div>
+    </div>
+
+    <script>
+        // Konfigurasi Supabase Anda
+        const SUPABASE_URL = 'https://nvtedibubuiykovrtfiv.supabase.co';
+	const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52dGVkaWJ1YnVpeWtvdnJ0Zml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTk5MzQsImV4cCI6MjA2Nzc3NTkzNH0.s5-CtQuXYAf1hQcRwljYhROibzm9U65XGxtD7LJeNVU';
+	const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Memastikan DOM telah dimuat sepenuhnya sebelum menjalankan skrip
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('login-form');
+            const errorMessage = document.getElementById('error-message');
+
+            if (loginForm) {
+                loginForm.addEventListener('submit', async (event) => {
+                    event.preventDefault(); // Mencegah refresh halaman
+                    const email = document.getElementById('email').value;
+                    const password = document.getElementById('password').value;
+
+                    // Melakukan sign-in dengan Supabase
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+                    // Tambahkan console.log ini untuk melihat respons dari Supabase
+                    console.log("Supabase Data:", data);
+                    console.log("Supabase Error:", error);
+
+                    if (error) {
+                        // Menampilkan pesan error jika login gagal
+                        errorMessage.textContent = "Login gagal: " + error.message;
+                        errorMessage.classList.remove('hidden'); // Menampilkan div error
+                    } else {
+                        // Mengarahkan ke halaman utama/dashboard jika login berhasil
+                        window.location.href = 'index.html'; 
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+/* style.css */
+
+/* Mengatur font Poppins sebagai font default untuk seluruh body */
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f8fafc; /* Warna latar belakang umum */
+    margin: 0; /* Menghilangkan margin default browser */
+    line-height: 1.5; /* Tinggi baris default */
+    color: #333; /* Warna teks default */
+}
+
+/* Gaya untuk tombol umum */
+.btn {
+    padding: 12px 28px;
+    border-radius: 9999px; /* Bentuk pil */
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+    display: inline-flex; /* Untuk perataan ikon/teks */
+    align-items: center;
+    justify-content: center;
+    text-decoration: none; /* Menghilangkan underline untuk link sebagai tombol */
+    cursor: pointer;
+    border: none; /* Menghilangkan border default */
+}
+
+/* Gaya untuk tombol utama (biru) */
+.btn-primary {
+    background-color: #1e3a8a; /* Biru gelap */
+    color: white;
+}
+.btn-primary:hover {
+    background-color: #1c347d; /* Sedikit lebih gelap saat hover */
+}
+
+/* Gaya untuk kartu ringkasan (summary cards) */
+.summary-card {
+    display: block;
+    background-color: white;
+    border-radius: 1rem; /* Sudut membulat */
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid #f3f4f6; /* Border sangat tipis */
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05); /* Bayangan lembut */
+    transition: all 0.2s ease-in-out;
+    text-decoration: none; /* Menghilangkan underline untuk link */
+    color: inherit; /* Mewarisi warna teks */
+}
+.summary-card:hover {
+    transform: translateY(-5px); /* Efek naik sedikit saat hover */
+    box-shadow: 0 4px 10px 0 rgba(0, 0, 0, 0.07); /* Bayangan lebih jelas saat hover */
+}
+
+/* Gaya untuk kartu karyawan (employee cards) */
+.employee-card {
+    background-color: white;
+    border-radius: 1rem;
+    padding: 2rem;
+    text-align: center;
+    position: relative;
+    border: 1px solid #f3f4f6;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+.employee-card img {
+    width: 6rem;
+    height: 6rem;
+    border-radius: 9999px; /* Bentuk lingkaran */
+    margin: 0 auto 1rem auto;
+    border: 4px solid white; /* Border putih di sekitar gambar */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); /* Bayangan untuk gambar */
+    object-fit: cover; /* Memastikan gambar mengisi area tanpa distorsi */
+}
+
+/* Gaya untuk tombol navigasi (header) */
+.btn-nav {
+    position: relative;
+    padding-bottom: 4px; /* Ruang untuk underline */
+    color: #6b7280; /* Warna teks abu-abu */
+    text-decoration: none; /* Menghilangkan underline default */
+    font-weight: 500;
+}
+.btn-nav::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0; /* Awalnya tidak terlihat */
+    height: 2px;
+    background-color: #2563eb; /* Warna underline biru */
+    transition: width 0.3s ease-in-out; /* Animasi saat hover */
+}
+.btn-nav:hover::after {
+    width: 100%; /* Lebar penuh saat hover */
+}
+
+/* Gaya untuk tombol aksi kecil (misal Clock In/Out) */
+.btn-action-sm {
+    padding: 8px 16px;
+    border-radius: 0.5rem; /* Sudut membulat */
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+}
+.btn-action { /* Gaya umum untuk tombol aksi di absensi.html */
+    padding: 12px;
+    color: white;
+    font-weight: 600;
+    border-radius: .5rem;
+    transition: all .2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+}
+.btn-action:disabled {
+    background-color: #9ca3af; /* Warna abu-abu saat disabled */
+    cursor: not-allowed;
+}
+
+/* Efek cermin untuk video kamera depan */
+video {
+    transform: scaleX(-1);
+}

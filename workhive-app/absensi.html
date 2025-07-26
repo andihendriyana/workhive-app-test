@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulir Absensi</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; }
+        .btn-action{padding:12px;color:white;font-weight:600;border-radius:.5rem;transition:all .2s ease-in-out;display:flex;align-items:center;justify-content:center}
+        .btn-action:disabled{background-color:#9ca3af;cursor:not-allowed}
+        video { transform: scaleX(-1); } /* Efek cermin untuk kamera depan */
+    </style>
+</head>
+<body class="bg-gray-50 font-poppins">
+
+    <div class="container mx-auto p-8 max-w-lg">
+        <div class="bg-white p-8 rounded-2xl shadow-lg">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 id="welcome-message" class="text-3xl font-bold text-gray-800">Memuat...</h1>
+                    <p id="schedule-info" class="text-gray-500">Mengecek jadwal & lokasi...</p>
+                </div>
+                <button id="logout-btn" class="text-sm text-red-500 hover:text-red-700 font-semibold">Logout</button>
+            </div>
+            <div id="status-message" class="hidden mb-4 p-4 text-sm rounded-lg"></div>
+
+            <div class="mb-6">
+                <div class="w-full aspect-video bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
+                    <video id="camera-feed" autoplay playsinline class="w-full h-full object-cover"></video>
+                    <canvas id="photo-canvas" class="hidden"></canvas>
+                </div>
+                <button id="take-photo-btn" class="mt-4 w-full btn-action bg-blue-600 hover:bg-blue-700">
+                    <i class="fas fa-camera mr-2"></i> Ambil Foto Selfie
+                </button>
+            </div>
+            
+            <div class="space-y-6">
+                <div>
+                    <label for="notes" class="block mb-2 text-sm font-medium text-gray-900">Catatan (Opsional)</label>
+                    <textarea id="notes" rows="3" class="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg" placeholder="Contoh: Rapat pagi."></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4 pt-4">
+                    <button id="clock-in-btn" class="w-full btn-action bg-green-600 hover:bg-green-700"><i class="fas fa-sign-in-alt mr-2"></i> Clock In</button>
+                    <button id="clock-out-btn" class="w-full btn-action bg-red-600 hover:bg-red-700"><i class="fas fa-sign-out-alt mr-2"></i> Clock Out</button>
+                </div>
+            </div>
+            <div class="text-center mt-6">
+                <a href="index.html" class="text-sm text-blue-600 hover:underline">&larr; Kembali ke Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://nvtedibubuiykovrtfiv.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52dGVkaWJ1YnVpeWtvdnJ0Zml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTk5MzQsImV4cCI6MjA2Nzc3NTkzNH0.s5-CtQuXYAf1hQcRwljYhROibzm9U65XGxtD7LJeNVU';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // GANTI KOORDINAT KANTOR ANDA DI SINI
+        const OFFICE_COORDS = { lat: -6.16709, lon: 106.79217 }; 
+        const ALLOWED_RADIUS_METERS = 200; // Radius toleransi lokasi
+
+        const welcomeMessage = document.getElementById('welcome-message');
+        const scheduleInfo = document.getElementById('schedule-info');
+        const clockInBtn = document.getElementById('clock-in-btn');
+        const clockOutBtn = document.getElementById('clock-out-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const notesInput = document.getElementById('notes');
+        const statusMessage = document.getElementById('status-message');
+        const video = document.getElementById('camera-feed');
+        const canvas = document.getElementById('photo-canvas');
+        const takePhotoBtn = document.getElementById('take-photo-btn');
+        
+        let currentEmployee = null;
+        let capturedPhotoBlob = null;
+        let isLocationVerified = false;
+
+        function showMessage(message, isError = false) {
+            if (!statusMessage) return;
+            statusMessage.textContent = message;
+            statusMessage.className = `p-4 text-sm rounded-lg ${isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
+            statusMessage.classList.remove('hidden');
+            if(!isError) setTimeout(() => statusMessage.classList.add('hidden'), 5000);
+        }
+
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // metres
+            const φ1 = lat1 * Math.PI / 180; // φ, λ in radians
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c; // in metres
+        }
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                video.srcObject = stream;
+                console.log("Camera started successfully."); // Debugging
+            } catch (err) {
+                showMessage("Kamera tidak bisa diakses. Mohon izinkan akses kamera.", true);
+                console.error("Error starting camera:", err); // Debugging
+            }
+        }
+
+        takePhotoBtn.addEventListener('click', () => {
+            if (!video.srcObject) {
+                showMessage("Kamera belum aktif. Mohon izinkan akses kamera.", true);
+                return;
+            }
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.translate(canvas.width, 0);
+            context.scale(-1, 1);
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(blob => { capturedPhotoBlob = blob; }, 'image/jpeg', 0.8);
+            showMessage("Foto berhasil diambil!", false);
+            takePhotoBtn.textContent = 'Ambil Ulang Foto';
+            updateClockInButtonState();
+            console.log("Photo captured."); // Debugging
+        });
+        
+        function updateClockInButtonState() {
+            if (isLocationVerified && capturedPhotoBlob) {
+                clockInBtn.disabled = false;
+                console.log("Clock In button enabled."); // Debugging
+            } else {
+                clockInBtn.disabled = true;
+                console.log("Clock In button disabled (location/photo missing)."); // Debugging
+            }
+        }
+
+        function handleLocation() {
+            if (!navigator.geolocation) {
+                showMessage("Geolokasi tidak didukung oleh browser Anda.", true);
+                console.error("Geolocation not supported."); // Debugging
+                return;
+            }
+            showMessage("Mendeteksi lokasi Anda...", false);
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const distance = getDistance(OFFICE_COORDS.lat, OFFICE_COORDS.lon, position.coords.latitude, position.coords.longitude);
+                    console.log(`Distance to office: ${distance.toFixed(2)}m`); // Debugging
+                    if (distance > ALLOWED_RADIUS_METERS) {
+                        showMessage(`Anda berada di luar area kantor (${Math.round(distance)}m).`, true);
+                        isLocationVerified = false;
+                    } else {
+                        showMessage(`Lokasi terverifikasi! Silakan ambil foto.`, false);
+                        isLocationVerified = true;
+                    }
+                    updateClockInButtonState();
+                },
+                (error) => {
+                    showMessage("Gagal mendapatkan lokasi. Mohon izinkan akses lokasi.", true);
+                    console.error("Geolocation error:", error); // Debugging
+                    isLocationVerified = false;
+                    updateClockInButtonState();
+                }
+            );
+        }
+
+        clockInBtn.addEventListener('click', async () => {
+            if (!currentEmployee) { showMessage('Profil karyawan tidak ditemukan. Mohon refresh halaman.', true); return; }
+            if (!capturedPhotoBlob) { showMessage('Silakan ambil foto selfie terlebih dahulu.', true); return; }
+            if (!isLocationVerified) { showMessage('Lokasi belum terverifikasi. Mohon izinkan akses lokasi.', true); return; }
+
+            clockInBtn.disabled = true;
+            clockInBtn.textContent = 'Mengunggah...';
+            showMessage('Mengunggah foto dan menyimpan absensi...', false);
+
+            const fileName = `selfie-${currentEmployee.id}-${Date.now()}.jpeg`;
+            
+            try {
+                // 1. Upload foto ke Supabase Storage
+                console.log("Uploading photo to Supabase Storage..."); // Debugging
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage.from('selfies').upload(fileName, capturedPhotoBlob);
+                if (uploadError) {
+                    throw uploadError;
+                }
+                console.log("Photo uploaded:", uploadData); // Debugging
+
+                // 2. Dapatkan URL publik dari foto yang diupload
+                const { data: urlData } = supabaseClient.storage.from('selfies').getPublicUrl(fileName);
+                console.log("Public photo URL:", urlData.publicUrl); // Debugging
+
+                // 3. Cek jadwal dan tentukan status
+                const todayString = new Date().toISOString().split('T')[0];
+                console.log("Fetching schedule for employee ID:", currentEmployee.id, "on date:", todayString); // Debugging
+                // Menggunakan tabel 'schedules' yang perlu Anda buat
+                const { data: schedule, error: scheduleError } = await supabaseClient.from('schedules').select('shift_start_time').eq('employee_id', currentEmployee.id).eq('schedule_date', todayString).single();
+                
+                if (scheduleError) {
+                    console.error("Error fetching schedule:", scheduleError); // Debugging
+                    showMessage('Gagal mendapatkan jadwal kerja. ' + scheduleError.message, true);
+                    return;
+                }
+                if (!schedule) {
+                    showMessage('Tidak ada jadwal kerja untuk Anda hari ini.', true);
+                    return;
+                }
+                
+                const now = new Date();
+                const [hours, minutes] = schedule.shift_start_time.split(':');
+                const shiftStartTime = new Date();
+                shiftStartTime.setHours(hours, minutes, 0, 0); // Set waktu shift ke tanggal hari ini
+                const status = now <= shiftStartTime ? 'Hadir' : 'Terlambat'; // Menggunakan 'Hadir'/'Terlambat' sesuai skema
+                console.log(`Shift start time: ${shiftStartTime.toLocaleTimeString()}, Current time: ${now.toLocaleTimeString()}, Status: ${status}`); // Debugging
+
+                // 4. Simpan data absensi ke database
+                console.log("Inserting attendance record..."); // Debugging
+                // Menggunakan tabel 'attendances' dan kolom 'check_in', 'status_kehadiran', 'selfie_url'
+                const { error: insertError } = await supabaseClient.from('attendances').insert({ employee_id: currentEmployee.id, tanggal: todayString, check_in: now.toISOString(), status_kehadiran: status, catatan: notesInput.value, selfie_url: urlData.publicUrl });
+                
+                if (insertError) {
+                    console.error("Error inserting attendance:", insertError); // Debugging
+                    showMessage('Gagal Clock In. Mungkin Anda sudah Clock In hari ini atau ada masalah lain.', true);
+                } else {
+                    showMessage(`Berhasil Clock In dengan status: ${status}!`);
+                    setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+                }
+            } catch (error) {
+                console.error("Clock In process error:", error); // Debugging
+                showMessage(`Terjadi kesalahan saat Clock In: ${error.message}`, true);
+            } finally {
+                clockInBtn.disabled = false;
+                clockInBtn.textContent = 'Clock In';
+            }
+        });
+
+        async function checkUserAndSchedule() {
+            clockInBtn.disabled = true;
+            clockOutBtn.disabled = true;
+            
+            console.log("Checking user session..."); // Debugging
+            const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+            if (sessionError) {
+                console.error("Error getting session:", sessionError); // Debugging
+                window.location.href = 'login.html';
+                return;
+            }
+            if (!session) {
+                console.log("No session found, redirecting to login."); // Debugging
+                window.location.href = 'login.html';
+                return;
+            }
+            console.log("Session found:", session); // Debugging
+
+            console.log("Fetching employee data for email:", session.user.email); // Debugging
+            // Menggunakan nama_lengkap
+            const { data: employeeData, error: employeeError } = await supabaseClient.from('employees').select('id, nama_lengkap, email').eq('email', session.user.email).single();
+            
+            console.log("Employee Data:", employeeData); // Debugging
+            console.log("Employee Error:", employeeError); // Debugging
+
+            if (employeeError) {
+                console.error("Error fetching employee data:", employeeError); // Debugging
+                if (welcomeMessage) welcomeMessage.textContent = 'Profil Tidak Ditemukan atau Error Memuat';
+                showMessage('Profil karyawan tidak ditemukan. Pastikan email Anda terdaftar di tabel karyawan.', true);
+                return;
+            }
+            if (!employeeData) {
+                if (welcomeMessage) welcomeMessage.textContent = 'Profil Tidak Ditemukan';
+                showMessage('Profil karyawan tidak ditemukan. Pastikan email Anda terdaftar di tabel karyawan.', true);
+                return;
+            }
+            
+            currentEmployee = employeeData;
+            if (welcomeMessage) welcomeMessage.textContent = `Hai, ${currentEmployee.nama_lengkap}!`; // Menggunakan nama_lengkap
+
+            const todayString = new Date().toISOString().split('T')[0];
+            console.log("Fetching schedule for employee ID:", currentEmployee.id, "on date:", todayString); // Debugging
+            // Menggunakan tabel 'schedules' yang perlu Anda buat
+            const { data: schedule, error: scheduleError } = await supabaseClient.from('schedules').select('shift_start_time').eq('employee_id', currentEmployee.id).eq('schedule_date', todayString).single();
+            
+            console.log("Schedule Data:", schedule); // Debugging
+            console.log("Schedule Error:", scheduleError); // Debugging
+
+            if(scheduleError) {
+                console.error("Error fetching schedule:", scheduleError); // Debugging
+                scheduleInfo.textContent = `Gagal memuat jadwal: ${scheduleError.message}`;
+                showMessage('Gagal memuat jadwal kerja.', true);
+            } else if(schedule) {
+                scheduleInfo.textContent = `Jadwal masuk: ${schedule.shift_start_time.substring(0, 5)}. Mohon izinkan akses lokasi & kamera.`;
+                startCamera();
+                handleLocation();
+            } else {
+                scheduleInfo.textContent = `Tidak ada jadwal kerja untuk Anda hari ini.`;
+                showMessage('Tidak ada jadwal kerja untuk Anda hari ini.', true);
+            }
+
+            // Cek status absensi hari ini untuk mengaktifkan/menonaktifkan tombol clock in/out
+            const { data: currentAttendance, error: currentAttendanceError } = await supabaseClient
+                .from('attendances')
+                .select('id, check_in, check_out')
+                .eq('employee_id', currentEmployee.id)
+                .eq('tanggal', todayString)
+                .single();
+
+            console.log("Current Attendance Data:", currentAttendance); // Debugging
+            console.log("Current Attendance Error:", currentAttendanceError); // Debugging
+
+            if (currentAttendanceError && currentAttendanceError.code !== 'PGRST116') { // PGRST116 = No rows found
+                console.error("Error fetching current attendance:", currentAttendanceError);
+                showMessage('Gagal memuat status absensi hari ini.', true);
+            } else if (currentAttendance && currentAttendance.check_in && !currentAttendance.check_out) {
+                clockInBtn.disabled = true;
+                clockOutBtn.disabled = false;
+                showMessage('Anda sudah Clock In hari ini. Silakan Clock Out.', false);
+            } else if (currentAttendance && currentAttendance.check_in && currentAttendance.check_out) {
+                clockInBtn.disabled = true;
+                clockOutBtn.disabled = true;
+                showMessage('Anda sudah Clock In dan Clock Out hari ini.', false);
+            } else {
+                // Jika belum ada absensi hari ini, tombol Clock In akan diatur oleh updateClockInButtonState()
+                // yang dipanggil setelah lokasi dan foto terverifikasi.
+            }
+        }
+        
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async () => {
+                await supabaseClient.auth.signOut();
+                window.location.href = 'login.html';
+            });
+        }
+        
+        // Event listener untuk tombol Clock Out
+        if (clockOutBtn) {
+            clockOutBtn.addEventListener('click', async () => {
+                if (!currentEmployee) { showMessage('Tidak bisa memverifikasi user.', true); return; }
+                
+                clockOutBtn.disabled = true;
+                clockOutBtn.textContent = 'Memproses...';
+                showMessage('Memproses Clock Out...', false);
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Pastikan tanggal hari ini
+                const todayString = today.toISOString().split('T')[0];
+
+                try {
+                    // Cari record absensi hari ini yang sudah Clock In tapi belum Clock Out
+                    const { data: records, error: fetchRecordError } = await supabaseClient
+                        .from('attendances') // Menggunakan tabel 'attendances'
+                        .select('id')
+                        .eq('employee_id', currentEmployee.id)
+                        .eq('tanggal', todayString) // Filter berdasarkan tanggal
+                        .is('check_out', null) // Belum clock out
+                        .limit(1);
+
+                    if (fetchRecordError) {
+                        throw fetchRecordError;
+                    }
+                    if (!records || records.length === 0) {
+                        showMessage('Tidak ditemukan data Clock In aktif hari ini.', true);
+                        return;
+                    }
+
+                    const { error: updateError } = await supabaseClient
+                        .from('attendances') // Menggunakan tabel 'attendances'
+                        .update({ check_out: new Date().toISOString() })
+                        .eq('id', records[0].id);
+
+                    if (updateError) {
+                        throw updateError;
+                    } else {
+                        showMessage('Berhasil Clock Out!');
+                        setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+                    }
+                } catch (error) {
+                    console.error("Clock Out process error:", error); // Debugging
+                    showMessage(`Gagal Clock Out: ${error.message}`, true);
+                } finally {
+                    clockOutBtn.disabled = false;
+                    clockOutBtn.textContent = 'Clock Out';
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', checkUserAndSchedule);
+    </script>
+</body>
+</html>

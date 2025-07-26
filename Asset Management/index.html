@@ -1,0 +1,1619 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Asset Management - Aston Kartika Grogol</title>
+    <!-- Supabase Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- QR Code Generation Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PapaParse for CSV parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+    <!-- HTML5-QR Code Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+    <style>
+        /* CSS Lengkap untuk Semua Fitur */
+        :root {
+            --bg: #fff;
+            --text: #333;
+            --card-bg: #f9f9f9;
+            --border-color: #eee;
+            --header-color: #003366;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --edit-color: #f0ad4e;
+            --delete-color: #d9534f;
+            --print-color: #5bc0de;
+            --import-color: #5cb85c;
+            --button-hover-darken: 10%;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            --bg: #121212;
+            --text: #f5f5f5;
+            --card-bg: #1e1e1e;
+            --border-color: #333;
+            --button-hover-darken: -10%; /* Lighten for dark mode */
+        }
+
+        /* Base Body Styles */
+        body {
+            font-family: 'Inter', Arial, sans-serif; /* Using Inter for a modern look */
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg);
+            color: var(--text);
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s;
+            line-height: 1.6;
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        /* General Button Styles */
+        .button {
+            padding: 10px 18px; /* Slightly larger padding */
+            cursor: pointer;
+            border-radius: 8px; /* More rounded corners */
+            border: none;
+            font-size: 15px; /* Slightly larger font */
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle shadow */
+        }
+
+        .button:hover {
+            transform: translateY(-1px); /* Slight lift effect */
+            filter: brightness(calc(100% - var(--button-hover-darken))); /* Darken on hover */
+        }
+
+        .button-primary {
+            background-color: var(--header-color);
+            color: white;
+        }
+
+        /* Login Section Styles */
+        #login-section {
+            max-width: 450px; /* Slightly wider */
+            margin: 100px auto;
+            padding: 40px; /* More padding */
+            background-color: var(--card-bg);
+            border-radius: 12px; /* More rounded */
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15); /* Stronger shadow */
+            text-align: center;
+        }
+
+        #login-form input,
+        #login-form button {
+            width: 100%;
+            padding: 14px; /* Larger padding */
+            margin-bottom: 18px; /* More margin */
+            font-size: 17px; /* Larger font */
+            box-sizing: border-box;
+            border-radius: 8px; /* More rounded */
+            border: 1px solid var(--border-color);
+            background-color: var(--bg); /* Match background */
+            color: var(--text); /* Match text color */
+        }
+
+        #login-form button {
+            background-color: var(--header-color);
+            color: white;
+            border: none;
+        }
+
+        /* Main Container Styles */
+        .container {
+            max-width: 1024px; /* Wider container */
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Top Bar (Global Controls) */
+        .top-bar {
+            position: fixed; /* Use fixed for top bar */
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background-color: var(--card-bg); /* Background for visibility */
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .top-bar button {
+            padding: 8px 14px;
+            font-size: 15px;
+        }
+
+        #logout-btn {
+            background-color: var(--delete-color);
+            color: white;
+        }
+
+        /* Header & Logo */
+        .logo-wrapper {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            max-width: 250px; /* Larger logo */
+            height: auto;
+            border-radius: 8px; /* Rounded corners for logo */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        h1,
+        h2 {
+            text-align: center;
+            margin: 5px 0;
+            color: var(--header-color);
+        }
+
+        h1 {
+            font-size: 32px; /* Larger main heading */
+            margin-top: 15px;
+        }
+
+        h2 {
+            font-size: 18px; /* Larger subheading */
+            color: gray;
+            margin-bottom: 30px;
+        }
+
+        /* Page Header for Sections */
+        .page-header {
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping on small screens */
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            gap: 15px; /* More space between elements */
+        }
+
+        .page-header h1 {
+            text-align: left;
+            margin: 0;
+            flex-grow: 1; /* Allow heading to take available space */
+            color: var(--text); /* Use text color for section headings */
+        }
+
+        .page-header > div {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        /* Input Forms (Add Asset, Import, Filters) */
+        .input-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px; /* More space between inputs */
+            margin: 25px 0;
+            padding: 25px; /* More padding */
+            background-color: var(--card-bg);
+            border-radius: 12px; /* More rounded */
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .input-form input,
+        .input-form select {
+            padding: 12px 15px; /* Larger padding */
+            font-size: 15px;
+            flex: 1 1 220px; /* Allow inputs to grow/shrink, min width 220px */
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg);
+            color: var(--text);
+        }
+
+        .input-form button {
+            padding: 12px 20px;
+            font-size: 15px;
+            white-space: nowrap;
+            background-color: var(--header-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* Report Filters Specific Styles */
+        #report-filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Adaptive columns */
+            gap: 20px; /* More gap */
+            align-items: end;
+            padding: 25px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        #report-filters input,
+        #report-filters select,
+        #report-filters button {
+            padding: 12px;
+            font-size: 15px;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--bg);
+            color: var(--text);
+        }
+
+        #apply-filter-btn {
+            background-color: var(--header-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Import Section Styles */
+        #impor-section {
+            margin-top: 30px;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        #impor-section h3,
+        #impor-section p {
+            margin: 0 0 12px 0;
+            color: var(--text);
+        }
+
+        #import-csv-btn {
+            margin-top: 15px;
+            background-color: var(--import-color);
+            color: white;
+        }
+
+        /* Dashboard Grid */
+        #dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr; /* Default: single column for small screens */
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        /* Ensure 2 columns on medium and larger screens for dashboard */
+        @media (min-width: 768px) { /* This breakpoint should capture tablets and desktops */
+            #dashboard-grid {
+                grid-template-columns: 1fr 1fr; /* Force two columns */
+            }
+        }
+
+        .chart-container {
+            padding: 25px;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08); /* Stronger shadow */
+            display: flex; /* Use flex for centering chart title */
+            flex-direction: column;
+            align-items: center;
+            width: 100%; /* Ensure it takes full width of its grid cell */
+            box-sizing: border-box; /* Include padding in width */
+        }
+
+        .chart-container h3 {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 20px; /* Space below title */
+            color: var(--text);
+        }
+
+        /* IMPORTANT: Force canvas to be responsive within its container */
+        .chart-container canvas {
+            width: 100% !important; /* Force canvas to take full width */
+            height: auto !important; /* Maintain aspect ratio or let Chart.js handle it */
+            max-height: 300px; /* Add a max-height to prevent it from being too tall */
+        }
+
+        /* Report Table Styles */
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden; /* Ensures rounded corners apply to content */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .report-table th,
+        .report-table td {
+            border: 1px solid var(--border-color);
+            padding: 12px 15px; /* More padding */
+            text-align: left;
+        }
+
+        .report-table th {
+            background-color: var(--header-color);
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 14px;
+        }
+
+        .report-table tbody tr:nth-child(even) {
+            background-color: rgba(0, 51, 102, 0.05); /* Light stripe for readability */
+        }
+        body.dark-mode .report-table tbody tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .report-table tbody tr:hover {
+            background-color: rgba(0, 51, 102, 0.1); /* Hover effect */
+            cursor: default;
+        }
+        body.dark-mode .report-table tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .report-table .action-cell {
+            width: 180px; /* Wider action cell */
+            text-align: center;
+            white-space: nowrap; /* Prevent buttons from wrapping */
+        }
+
+        .report-table .action-cell button {
+            margin: 0 4px; /* More space between buttons */
+            color: white;
+            padding: 8px 12px; /* Larger buttons */
+            font-size: 13px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .edit-btn {
+            background-color: var(--edit-color);
+        }
+
+        .delete-btn {
+            background-color: var(--delete-color);
+        }
+
+        .print-btn {
+            background-color: var(--print-color);
+        }
+
+        /* Scanner Section */
+        #scanner-section {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85); /* Darker overlay */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 2000;
+        }
+
+        #reader {
+            width: 90%;
+            max-width: 550px; /* Slightly larger scanner area */
+            background-color: white;
+            border-radius: 12px;
+            overflow: hidden; /* Ensures video stream stays within bounds */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        #close-scanner-btn {
+            margin-top: 30px;
+            padding: 12px 25px;
+            font-size: 17px;
+            background-color: var(--delete-color);
+            color: white;
+        }
+
+        /* Notification Message */
+        #notification {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            padding: 18px 25px; /* Larger padding */
+            border-radius: 8px;
+            color: white;
+            font-size: 17px;
+            z-index: 2001;
+            opacity: 0;
+            transform: translateY(-60px); /* More pronounced slide-in */
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out; /* Slower, smoother transition */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            min-width: 250px; /* Ensure it's wide enough */
+            text-align: center;
+        }
+
+        #notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #notification.success {
+            background-color: var(--success-color);
+        }
+
+        #notification.error {
+            background-color: var(--error-color);
+        }
+
+        /* Custom Confirmation Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            color: var(--text);
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--header-color);
+            font-size: 20px;
+        }
+
+        .modal-actions {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .modal-actions button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .modal-actions .confirm-btn {
+            background-color: var(--delete-color);
+            color: white;
+        }
+
+        .modal-actions .cancel-btn {
+            background-color: #ccc;
+            color: #333;
+        }
+        body.dark-mode .modal-actions .cancel-btn {
+            background-color: #555;
+            color: #f5f5f5;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            .top-bar {
+                top: 10px;
+                right: 10px;
+                padding: 8px 12px;
+                gap: 10px;
+            }
+            .top-bar button {
+                padding: 6px 10px;
+                font-size: 13px;
+            }
+            h1 {
+                font-size: 26px;
+            }
+            h2 {
+                font-size: 16px;
+            }
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .page-header h1 {
+                text-align: center; /* Center heading on small screens */
+                width: 100%;
+            }
+            .page-header > div {
+                justify-content: center;
+                width: 100%;
+            }
+            .input-form {
+                flex-direction: column;
+                padding: 20px;
+                gap: 10px;
+            }
+            .input-form input,
+            .input-form select,
+            .input-form button {
+                width: 100%;
+                flex: none; /* Disable flex growth on small screens */
+            }
+            #report-filters {
+                grid-template-columns: 1fr; /* Stack filters on small screens */
+                padding: 20px;
+                gap: 10px;
+            }
+            #dashboard-grid {
+                grid-template-columns: 1fr; /* Stack charts on small screens */
+                gap: 20px;
+            }
+            .report-table th, .report-table td {
+                padding: 10px;
+                font-size: 13px;
+            }
+            .report-table .action-cell {
+                width: auto; /* Allow action buttons to wrap */
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 5px;
+            }
+            .report-table .action-cell button {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+            #notification {
+                top: 15px;
+                right: 15px;
+                padding: 12px 18px;
+                font-size: 14px;
+                min-width: unset;
+                width: calc(100% - 30px); /* Full width minus padding */
+                left: 15px; /* Center it */
+                transform: translateY(-50px);
+            }
+            .modal-content {
+                padding: 20px;
+            }
+            .modal-actions {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Login Section -->
+    <div id="login-section">
+        <h1>Login Manajemen Aset</h1>
+        <form id="login-form">
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+    
+    <!-- Global Controls (Dark Mode, Logout) -->
+    <div id="global-controls" class="top-bar hidden">
+        <span id="user-email" style="font-size: 14px; margin-right: 15px;"></span>
+        <button id="darkModeToggle">🌙</button>
+        <button id="logout-btn">Logout</button>
+    </div>
+
+    <!-- Main Application Container (Dashboard & Add Asset) -->
+    <div id="main-container" class="container hidden">
+        <div class="logo-wrapper">
+            <!-- Placeholder image for the logo -->
+            <img src="https://placehold.co/250x100/003366/FFFFFF?text=ASTON+LOGO" class="logo" alt="Logo Aston Kartika Grogol">
+        </div>
+        <h1>ASTON KARTIKA GROGOL</h1>
+        <h2>ASSET MANAGEMENT</h2>
+
+        <!-- Asset Management Section Header -->
+        <div class="page-header" style="margin-top: 40px;">
+            <h1>Manajemen Aset</h1>
+            <div>
+                <button id="scan-asset-btn" class="button" style="background-color: var(--edit-color); color:white;">📷 Scan Aset</button>
+                <button id="view-import-btn" class="button" style="background-color: var(--import-color);">🚀 Impor</button>
+                <button id="view-report-btn" class="button button-primary">📋 Laporan</button>
+            </div>
+        </div>
+
+        <!-- Add/Edit Asset Form -->
+        <form class="input-form" id="add-asset-form">
+            <input type="hidden" id="assetId">
+            <input type="text" id="namaAsset" placeholder="Nama Aset" required>
+            <input type="text" id="kodeAsset" placeholder="Kode Aset" required>
+            <input type="text" id="departemenAsset" placeholder="Departemen" required>
+            <input type="text" id="statusAsset" placeholder="Status" required>
+            <input type="number" id="hargaAsset" placeholder="Harga Beli (Rp)" step="1000">
+            <input type="date" id="tanggalBeliAsset" title="Tanggal Pembelian">
+            <input type="number" id="umurManfaatAsset" placeholder="Umur Manfaat (Tahun)">
+            <input type="file" id="gambarAsset" accept="image/*">
+            <button type="submit">💾 Simpan Aset</button>
+        </form>
+
+        <hr style="margin: 40px 0; border: 1px solid var(--border-color);">
+
+        <!-- Analytics Dashboard Section -->
+        <h1>Dasbor Analitik</h1>
+        <div id="dashboard-grid">
+            <div class="chart-container">
+                <h3>Aset per Departemen</h3>
+                <canvas id="department-chart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>Aset per Status</h3>
+                <canvas id="status-chart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Report Container -->
+    <div id="report-container" class="container hidden">
+        <div class="page-header">
+            <h1>Laporan Aset</h1>
+            <button class="button button-primary back-to-main-btn">Kembali</button>
+        </div>
+        <div id="report-filters" class="input-form">
+            <input type="text" id="search-keyword" placeholder="Cari nama atau kode aset...">
+            <select id="filter-department"><option value="">Semua Departemen</option></select>
+            <select id="filter-status"><option value="">Semua Status</option></select>
+            <button id="apply-filter-btn" class="button-primary">Saring</button>
+        </div>
+        <button id="export-btn" class="button" style="background-color:#1D6F42; color:white; margin-top:10px;">📄 Export ke Excel</button>
+        <div id="report-content"><p>Memuat laporan...</p></div>
+    </div>
+
+    <!-- Import Container -->
+    <div id="import-container" class="container hidden">
+        <div class="page-header">
+            <h1>Impor Data Massal dari CSV</h1>
+            <button class="button button-primary back-to-main-btn">Kembali</button>
+        </div>
+        <div id="impor-section" class="input-form">
+            <h3>Impor Data dari File CSV</h3>
+            <p>Gunakan file .csv dengan header seperti: `nama asset`, `kode asset`, `departemen`, `status`, `harga pembelian`, `tanggal pembelian`, `umur manfaat tahun`</p>
+            <input type="file" id="csv-file-input" accept=".csv">
+            <button id="import-csv-btn" class="button">🚀 Impor Data Sekarang</button>
+            <div id="import-feedback" style="margin-top: 10px; font-size: 14px; width: 100%;"></div>
+        </div>
+    </div>
+
+    <!-- QR Scanner Section -->
+    <div id="scanner-section" class="hidden">
+        <div id="reader"></div>
+        <button id="close-scanner-btn" class="button">Tutup Scanner</button>
+    </div>
+
+    <!-- Notification Message -->
+    <div id="notification" class="hidden"></div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmation-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Konfirmasi Penghapusan</h3>
+            <p>Apakah Anda yakin ingin menghapus aset ini? Tindakan ini tidak dapat dibatalkan.</p>
+            <div class="modal-actions">
+                <button class="button confirm-btn" id="confirm-delete-btn">Hapus</button>
+                <button class="button cancel-btn" id="cancel-delete-btn">Batal</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- 1. KONFIGURASI & REFERENSI ---
+    // Supabase configuration - KEEP AS IS, as provided by the user.
+    const SUPABASE_URL = 'https://nyxrgybnyleqkxieasyr.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55eHJneWJueWxlcWt4aWVhc3lyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MTM0MDUsImV4cCI6MjA2NTk4OTQwNX0.A0OV03prGC5YmXCxjGpFiQ9Nim5UZq_5lQBqtJyadmw';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // All DOM element references for easier access
+    const loginSection = document.getElementById('login-section');
+    const mainContainer = document.getElementById('main-container');
+    const reportContainer = document.getElementById('report-container');
+    const importContainer = document.getElementById('import-container');
+    const globalControls = document.getElementById('global-controls');
+    const loginForm = document.getElementById('login-form');
+    const logoutBtn = document.getElementById('logout-btn');
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const userEmailSpan = document.getElementById('user-email');
+    const addAssetForm = document.getElementById('add-asset-form');
+    const notification = document.getElementById('notification');
+    const viewReportBtn = document.getElementById('view-report-btn');
+    const reportContent = document.getElementById('report-content');
+    const exportBtn = document.getElementById('export-btn');
+    const csvFileInput = document.getElementById('csv-file-input');
+    const importCsvBtn = document.getElementById('import-csv-btn');
+    const importFeedback = document.getElementById('import-feedback');
+    const scanAssetBtn = document.getElementById('scan-asset-btn');
+    const scannerSection = document.getElementById('scanner-section');
+    const closeScannerBtn = document.getElementById('close-scanner-btn');
+    const viewImportBtn = document.getElementById('view-import-btn');
+    const searchKeywordInput = document.getElementById('search-keyword');
+    const filterDepartmentSelect = document = document.getElementById('filter-department');
+    const filterStatusSelect = document.getElementById('filter-status');
+    const applyFilterBtn = document.getElementById('apply-filter-btn');
+    const backToMainButtons = document.querySelectorAll('.back-to-main-btn');
+
+    // Confirmation Modal elements
+    const confirmationModal = document.getElementById('confirmation-modal');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+
+    let departmentChartInstance;
+    let statusChartInstance;
+    let html5QrCode;
+    let assetIdToDelete = null; // Variable to store the ID of the asset to be deleted
+
+    // --- 2. FUNGSI NAVIGASI ---
+    /**
+     * Hides all main content containers and shows the specified one.
+     * @param {HTMLElement|null} pageToShow - The container element to show, or null to hide all.
+     */
+    function showPage(pageToShow) {
+        [mainContainer, reportContainer, importContainer, scannerSection, confirmationModal].forEach(page => page.classList.add('hidden'));
+        if (pageToShow) {
+            pageToShow.classList.remove('hidden');
+        }
+    }
+
+    // --- 3. FUNGSI INTI APLIKASI ---
+
+    /**
+     * Renders or updates the dashboard charts (Assets per Department, Assets per Status).
+     */
+    async function renderDashboard() {
+        const { data, error } = await supabaseClient.from('assets').select('departemen, status');
+        if (error) {
+            console.error("Error fetching dashboard data:", error);
+            showNotification('Gagal memuat data dasbor.', 'error');
+            return;
+        }
+
+        // Destroy existing chart instances before re-rendering to prevent memory leaks
+        if (departmentChartInstance) departmentChartInstance.destroy();
+        if (statusChartInstance) statusChartInstance.destroy();
+
+        // Aggregate data for department and status counts
+        const departmentCounts = data.reduce((acc, { departemen }) => {
+            const dept = departemen || 'Lainnya';
+            acc[dept] = (acc[dept] || 0) + 1;
+            return acc;
+        }, {});
+
+        const statusCounts = data.reduce((acc, { status }) => {
+            const stat = status || 'Tanpa Status';
+            acc[stat] = (acc[stat] || 0) + 1;
+            return acc;
+        }, {});
+
+        try {
+            // Render Department Chart
+            const deptCtx = document.getElementById('department-chart').getContext('2d');
+            departmentChartInstance = new Chart(deptCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(departmentCounts),
+                    datasets: [{
+                        data: Object.values(departmentCounts),
+                        backgroundColor: ['#003366', '#f0ad4e', '#5bc0de', '#5cb85c', '#d9534f', '#777777'],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // Allow charts to fill container better
+                    plugins: {
+                        legend: {
+                            position: 'bottom', // Move legend to bottom
+                            labels: {
+                                color: 'var(--text)' // Ensure legend text is visible in dark mode
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Render Status Chart
+            const statusCtx = document.getElementById('status-chart').getContext('2d');
+            statusChartInstance = new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(statusCounts),
+                    datasets: [{
+                        data: Object.values(statusCounts),
+                        backgroundColor: ['#5cb85c', '#d9534f', '#f0ad4e', '#777777', '#003366', '#5bc0de'],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // Allow charts to fill container better
+                    plugins: {
+                        legend: {
+                            position: 'bottom', // Move legend to bottom
+                            labels: {
+                                color: 'var(--text)' // Ensure legend text is visible in dark mode
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (e) {
+            console.error("Chart rendering error:", e);
+            showNotification('Gagal merender grafik dasbor.', 'error');
+        }
+    }
+
+    /**
+     * Populates the department and status filter dropdowns in the report section.
+     */
+    async function populateFilterOptions() {
+        // Only populate if options are not already loaded (more than just "Semua Departemen")
+        if (filterDepartmentSelect.options.length > 1) return;
+
+        const { data, error } = await supabaseClient.from('assets').select('departemen, status');
+        if (error) {
+            console.error('Error fetching filter options:', error);
+            showNotification('Gagal memuat opsi filter.', 'error');
+            return;
+        }
+
+        // Extract unique departments and statuses, then sort them
+        const departments = [...new Set(data.map(item => item.departemen).filter(Boolean))].sort();
+        const statuses = [...new Set(data.map(item => item.status).filter(Boolean))].sort();
+
+        // Clear and repopulate department filter
+        filterDepartmentSelect.innerHTML = '<option value="">Semua Departemen</option>';
+        departments.forEach(dept => filterDepartmentSelect.innerHTML += `<option value="${dept}">${dept}</option>`);
+
+        // Clear and repopulate status filter
+        filterStatusSelect.innerHTML = '<option value="">Semua Status</option>';
+        statuses.forEach(stat => filterStatusSelect.innerHTML += `<option value="${stat}">${stat}</option>`);
+    }
+
+    /**
+     * Generates and displays the asset report based on current filters.
+     */
+    async function generateAssetReport() {
+        // Clear report content immediately to show loading state
+        reportContent.innerHTML = '<p>Memuat laporan...</p>'; 
+        console.log("Generating asset report...");
+
+        let query;
+        const keyword = searchKeywordInput.value.trim();
+        const department = filterDepartmentSelect.value;
+        const status = filterStatusSelect.value;
+
+        // Construct the Supabase query based on filters
+        if (keyword) {
+            // Assuming 'search_assets' is a Supabase RPC (Remote Procedure Call) function
+            query = supabaseClient.rpc('search_assets', { keyword: keyword });
+        } else {
+            query = supabaseClient.from('assets').select('*');
+        }
+        
+        if (department) {
+            query = query.eq('departemen', department);
+        }
+        if (status) {
+            query = query.eq('status', status);
+        }
+
+        // Order the results
+        query = query.order('departemen').order('nama_aset');
+        
+        const { data: assets, error } = await query;
+
+        if (error) {
+            console.error("Report Error:", error);
+            showNotification('Gagal memuat laporan: ' + error.message, 'error');
+            reportContent.innerHTML = '<p>Gagal memuat laporan.</p>';
+            return;
+        }
+
+        console.log("Fetched assets for report:", assets); // Log fetched data for debugging
+
+        if (assets.length === 0) {
+            reportContent.innerHTML = '<p>Belum ada data aset yang cocok dengan filter yang diterapkan.</p>';
+            return;
+        }
+
+        // Group assets by department for better report structure
+        const groupedAssets = assets.reduce((acc, asset) => {
+            const department = asset.departemen || 'Tanpa Departemen';
+            if (!acc[department]) acc[department] = [];
+            acc[department].push(asset);
+            return acc;
+        }, {});
+
+        let reportHTML = '';
+        for (const department in groupedAssets) {
+            reportHTML += `<h3>Departemen: ${department}</h3>`;
+            reportHTML += `<table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Kode Aset</th>
+                                    <th>Nama Aset</th>
+                                    <th>Status</th>
+                                    <th>Harga Beli</th>
+                                    <th>Nilai Buku Saat Ini</th>
+                                    <th>Tanggal Pembelian</th>
+                                    <th>Tanggal Dibuat</th>
+                                    <th class="action-cell">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+            groupedAssets[department].forEach(asset => {
+                // Format tanggal_pembelian for display
+                const purchaseDateFormatted = asset.tanggal_pembelian ? new Date(asset.tanggal_pembelian).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A';
+                // Format created_at for display
+                const createdDateFormatted = asset.created_at ? new Date(asset.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A';
+                const { currentValueFmt, purchasePriceFmt } = calculateDepreciation(asset);
+                reportHTML += `<tr>
+                                <td>${asset.kode_aset}</td>
+                                <td>${asset.nama_aset}</td>
+                                <td>${asset.status}</td>
+                                <td>${purchasePriceFmt}</td>
+                                <td>${currentValueFmt}</td>
+                                <td>${purchaseDateFormatted}</td>
+                                <td>${createdDateFormatted}</td>
+                                <td class="action-cell">
+                                    <button class="button edit-btn" data-id="${asset.id}" title="Edit">✏️</button>
+                                    <button class="button delete-btn" data-id="${asset.id}" title="Hapus">🗑️</button>
+                                    <button class="button print-btn" data-id="${asset.id}" title="Print QR">🖨️</button>
+                                </td>
+                            </tr>`;
+            });
+            reportHTML += `</tbody></table>`;
+        }
+        reportContent.innerHTML = reportHTML;
+        console.log("Report content updated.");
+    }
+
+    /**
+     * Handles the submission of the add/edit asset form.
+     * @param {Event} event - The form submission event.
+     */
+    async function handleFormSubmit(event) {
+        event.preventDefault();
+        const form = event.target;
+        const assetId = form.querySelector('#assetId').value;
+        const submitButton = form.querySelector('button[type="submit"]');
+
+        submitButton.disabled = true;
+        submitButton.textContent = 'Menyimpan...';
+
+        const assetData = {
+            nama_aset: form.querySelector('#namaAsset').value,
+            kode_aset: form.querySelector('#kodeAsset').value,
+            departemen: form.querySelector('#departemenAsset').value,
+            status: form.querySelector('#statusAsset').value,
+            harga_pembelian: parseFloat(form.querySelector('#hargaAsset').value) || null,
+            tanggal_pembelian: form.querySelector('#tanggalBeliAsset').value || null,
+            umur_manfaat_tahun: parseInt(form.querySelector('#umurManfaatAsset').value) || null
+        };
+
+        const file = form.querySelector('#gambarAsset').files[0];
+        if (file) {
+            const fileName = `${Date.now()}-${file.name}`;
+            const { data: uploadData, error: uploadError } = await supabaseClient.storage.from('gambar-aset').upload(fileName, file);
+
+            if (uploadError) {
+                submitButton.disabled = false;
+                submitButton.textContent = assetId ? '💾 Update Aset' : '💾 Simpan Aset';
+                return showNotification('Gagal upload gambar: ' + uploadError.message, 'error');
+            }
+            const { data: publicUrlData } = supabaseClient.storage.from('gambar-aset').getPublicUrl(uploadData.path);
+            assetData.gambar_url = publicUrlData.publicUrl;
+        }
+
+        let error;
+        if (assetId) {
+            // Update existing asset
+            ({ error } = await supabaseClient.from('assets').update(assetData).eq('id', assetId));
+        } else {
+            // Insert new asset
+            ({ error } = await supabaseClient.from('assets').insert([assetData]));
+        }
+
+        if (error) {
+            showNotification('Gagal menyimpan aset: ' + error.message, 'error');
+        } else {
+            showNotification(assetId ? 'Aset berhasil diperbarui!' : 'Aset baru berhasil ditambahkan!', 'success');
+            resetForm();
+            renderDashboard(); // Refresh dashboard data
+            // If the user is on the report page, refresh it too
+            if (!reportContainer.classList.contains('hidden')) {
+                generateAssetReport();
+            }
+        }
+
+        submitButton.disabled = false;
+        submitButton.textContent = assetId ? '💾 Update Aset' : '💾 Simpan Aset';
+    }
+    
+    /**
+     * Handles the import of asset data from a CSV file.
+     */
+    async function handleCsvImport() {
+        const file = csvFileInput.files[0];
+        if (!file) {
+            return showNotification('Pilih file CSV.', 'error');
+        }
+
+        importCsvBtn.disabled = true;
+        importCsvBtn.textContent = 'Memproses...';
+        importFeedback.textContent = '';
+
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: async (results) => {
+                const dataFromCsv = results.data;
+
+                if (dataFromCsv.length === 0) {
+                    resetImportButton();
+                    return showNotification('File CSV kosong atau format salah.', 'error');
+                }
+
+                importFeedback.textContent = `Mendeteksi ${dataFromCsv.length} baris. Menerjemahkan data...`;
+
+                try {
+                    // Map CSV columns to Supabase table columns
+                    const mappedData = dataFromCsv.map(row => {
+                        // Custom date parsing logic (as provided by user)
+                        const parseCustomDate = (dateStr) => {
+                            const s = String(dateStr || '').replace(/[^0-9]/g, '');
+                            if (!s) return null;
+                            // Assuming format could be DDMMYYYY or YYYYMMDD
+                            const year = s.length === 8 ? s.slice(-4) : '';
+                            const month = s.length === 8 ? s.slice(-6, -4) : '';
+                            const day = s.length === 8 ? s.slice(0, s.length - 6) : '';
+
+                            // Basic validation for YYYY-MM-DD format
+                            const finalDate = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+                            return isNaN(finalDate.getTime()) ? null : finalDate.toISOString().split('T')[0];
+                        };
+
+                        return {
+                            nama_aset: row['nama asset'],
+                            kode_aset: row['kode asset'],
+                            departemen: row.departemen,
+                            status: row.status,
+                            harga_pembelian: parseFloat(String(row['harga pembelian']).replace(/[^0-9.-]+/g,"")) || null, // Clean non-numeric chars
+                            tanggal_pembelian: parseCustomDate(row['tanggal pembelian']),
+                            umur_manfaat_tahun: parseInt(row['umur manfaat tahun']) || null
+                        };
+                    });
+
+                    importFeedback.textContent = `Data berhasil diterjemahkan. Mengirim ${mappedData.length} baris ke database...`;
+
+                    const { error } = await supabaseClient.from('assets').insert(mappedData);
+
+                    if (error) {
+                        showNotification('Impor gagal: ' + error.message, 'error');
+                        importFeedback.textContent = `Terjadi kesalahan saat mengimpor. Periksa Console (F12) untuk detail.`;
+                        console.error("Import Error:", error);
+                    } else {
+                        showNotification(`${mappedData.length} data aset berhasil diimpor!`, 'success');
+                        importFeedback.textContent = `Impor selesai.`;
+                        csvFileInput.value = ''; // Clear the file input
+                        renderDashboard(); // Refresh dashboard data
+                        if (!reportContainer.classList.contains('hidden')) {
+                            generateAssetReport(); // Refresh report if visible
+                        }
+                    }
+                } catch (e) {
+                    showNotification('Error saat memproses data: ' + e.message, 'error');
+                    importFeedback.textContent = 'Format data di dalam file CSV sepertinya salah. Periksa header dan tipe data.';
+                    console.error("Data mapping error:", e);
+                }
+                resetImportButton();
+            },
+            error: (err) => {
+                showNotification('Gagal membaca file CSV: ' + err.message, 'error');
+                resetImportButton();
+            }
+        });
+    }
+
+    /**
+     * Resets the CSV import button state.
+     */
+    function resetImportButton() {
+        importCsvBtn.disabled = false;
+        importCsvBtn.textContent = '🚀 Impor Data Sekarang';
+    }
+    
+    /**
+     * Calculates the current value of an asset based on straight-line depreciation.
+     * @param {Object} asset - The asset object containing purchase price, date, and useful life.
+     * @returns {Object} An object with formatted current value and purchase price.
+     */
+    function calculateDepreciation(asset) {
+        const { harga_pembelian, tanggal_pembelian, umur_manfaat_tahun } = asset;
+        const purchasePriceFmt = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(harga_pembelian || 0);
+
+        if (!harga_pembelian || !tanggal_pembelian || !umur_manfaat_tahun || umur_manfaat_tahun <= 0) {
+            return { currentValueFmt: 'N/A', purchasePriceFmt };
+        }
+
+        const purchaseDate = new Date(tanggal_pembelian);
+        const now = new Date();
+
+        // Calculate asset age in years
+        const assetAgeYears = (now - purchaseDate) / (1000 * 60 * 60 * 24 * 365.25); // Account for leap years
+        
+        if (assetAgeYears < 0) { // Future purchase date
+            return { currentValueFmt: purchasePriceFmt, purchasePriceFmt };
+        }
+
+        const annualDepreciation = harga_pembelian / umur_manfaat_tahun;
+        let totalDepreciation = annualDepreciation * assetAgeYears;
+
+        // Ensure total depreciation does not exceed purchase price
+        if (totalDepreciation > harga_pembelian) {
+            totalDepreciation = harga_pembelian;
+        }
+
+        const currentValue = harga_pembelian - totalDepreciation;
+        // Ensure current value is not negative
+        const currentValueFmt = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(currentValue > 0 ? currentValue : 0);
+
+        return { currentValueFmt, purchasePriceFmt };
+    }
+
+    /**
+     * Displays a temporary notification message to the user.
+     * @param {string} message - The message to display.
+     * @param {string} type - The type of notification ('success' or 'error' or 'info').
+     */
+    function showNotification(message, type = 'success') {
+        notification.textContent = message;
+        notification.className = type; // Set class based on type
+        notification.classList.add('show'); // Show the notification
+
+        // Hide notification after 3 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 3000);
+    }
+
+    /**
+     * Initiates the deletion of an asset after confirmation.
+     * @param {string} id - The ID of the asset to delete.
+     */
+    async function deleteAsset(id) {
+        console.log(`Attempting to delete asset with ID: ${id}`);
+        showNotification('Menghapus aset...', 'info');
+        const { error } = await supabaseClient.from('assets').delete().eq('id', id);
+
+        if (error) {
+            console.error("Error deleting asset:", error);
+            showNotification('Gagal menghapus aset: ' + error.message, 'error');
+        } else {
+            console.log(`Asset with ID: ${id} successfully deleted from database.`);
+            showNotification('Aset berhasil dihapus.', 'success');
+            // Add a slightly longer delay before refreshing the report to ensure Supabase has propagated the deletion
+            setTimeout(async () => {
+                console.log("Refreshing report and dashboard after deletion delay...");
+                await generateAssetReport(); // Re-generate the report to reflect the deletion
+                await renderDashboard(); // Re-render dashboard to update charts
+                console.log("Report and Dashboard refreshed after deletion with a small delay.");
+            }, 500); // Increased to 500ms delay
+        }
+    }
+
+    /**
+     * Populates the add/edit asset form with data for editing an existing asset.
+     * @param {string} id - The ID of the asset to edit.
+     */
+    async function populateFormForEdit(id) {
+        showPage(mainContainer); // Ensure main container is visible
+        showNotification('Memuat data aset...', 'info');
+        const { data, error } = await supabaseClient.from('assets').select('*').eq('id', id).single();
+
+        if (error) {
+            showNotification('Gagal mengambil data untuk diedit.', 'error');
+            console.error("Error fetching asset for edit:", error);
+            return;
+        }
+
+        // Populate form fields
+        addAssetForm.querySelector('#assetId').value = data.id;
+        addAssetForm.querySelector('#namaAsset').value = data.nama_aset;
+        addAssetForm.querySelector('#kodeAsset').value = data.kode_aset;
+        addAssetForm.querySelector('#departemenAsset').value = data.departemen;
+        addAssetForm.querySelector('#statusAsset').value = data.status;
+        addAssetForm.querySelector('#hargaAsset').value = data.harga_pembelian;
+        addAssetForm.querySelector('#tanggalBeliAsset').value = data.tanggal_pembelian;
+        addAssetForm.querySelector('#umurManfaatAsset').value = data.umur_manfaat_tahun;
+
+        // Change submit button text to indicate update mode
+        addAssetForm.querySelector('button[type="submit"]').textContent = '💾 Update Aset';
+
+        // Scroll to the form for better UX
+        addAssetForm.scrollIntoView({ behavior: 'smooth' });
+        showNotification('Data aset berhasil dimuat.', 'success');
+    }
+
+    /**
+     * Resets the add/edit asset form to its initial state.
+     */
+    function resetForm() {
+        addAssetForm.reset(); // Clears all form fields
+        addAssetForm.querySelector('#assetId').value = ''; // Clear hidden ID field
+        addAssetForm.querySelector('button[type="submit"]').textContent = '💾 Simpan Aset'; // Reset button text
+    }
+
+    /**
+     * Exports the current filtered asset report to a CSV file.
+     */
+    async function exportToCsv() {
+        showNotification('Mempersiapkan data untuk ekspor...', 'info');
+
+        let query = supabaseClient.from('assets').select('*');
+        const keyword = searchKeywordInput.value.trim();
+        const department = filterDepartmentSelect.value;
+        const status = filterStatusSelect.value;
+
+        // Apply filters to the export query
+        if (keyword) {
+            query = supabaseClient.rpc('search_assets', { keyword: keyword });
+        }
+        if (department) {
+            query = query.eq('departemen', department);
+        }
+        if (status) {
+            query = query.eq('status', status);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+            showNotification('Gagal mengambil data untuk ekspor: ' + error.message, 'error');
+            console.error("Export Error:", error);
+            return;
+        }
+
+        if (!data || data.length === 0) {
+            showNotification('Tidak ada data untuk di-ekspor.', 'error');
+            return;
+        }
+
+        // Define CSV headers
+        const headers = '"Nama Aset","Kode Aset","Departemen","Status","Harga Pembelian","Tanggal Pembelian","Umur Manfaat (Tahun)","Tanggal Dibuat"';
+
+        // Map asset data to CSV rows
+        const csvRows = data.map(row => {
+            const purchasePrice = row.harga_pembelian ? new Intl.NumberFormat('id-ID').format(row.harga_pembelian) : '';
+            const purchaseDate = row.tanggal_pembelian || '';
+            const createdDate = row.created_at ? new Date(row.created_at).toLocaleDateString('id-ID') : '';
+
+            // Function to escape values for CSV (handle commas and quotes)
+            const escape = (val) => `"${String(val || '').replace(/"/g, '""')}"`;
+
+            return [
+                escape(row.nama_aset),
+                escape(row.kode_aset),
+                escape(row.departemen),
+                escape(row.status),
+                purchasePrice,
+                purchaseDate,
+                row.umur_manfaat_tahun || '',
+                createdDate
+            ].join(',');
+        });
+
+        // Combine headers and rows
+        const csvContent = `${headers}\n${csvRows.join('\n')}`;
+
+        // Create a Blob and trigger download
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' }); // Add BOM for Excel compatibility
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `daftar-aset-${new Date().toISOString().slice(0,10)}.csv`; // Dynamic filename
+        
+        document.body.appendChild(link);
+        link.click(); // Programmatically click the link to trigger download
+        document.body.removeChild(link); // Clean up the link element
+
+        showNotification('Data berhasil di-ekspor ke CSV.', 'success');
+    }
+
+    /**
+     * Generates a QR code for an asset and opens a print window.
+     * @param {string} assetId - The ID of the asset to generate QR for.
+     */
+    async function generateAndPrint(assetId) {
+        showNotification('Mempersiapkan QR Code untuk dicetak...', 'info');
+        const { data: asset, error } = await supabaseClient.from('assets').select('*').eq('id', assetId).single();
+
+        if (error) {
+            showNotification('Gagal mengambil data aset untuk QR Code.', 'error');
+            console.error("Error fetching asset for QR:", error);
+            return;
+        }
+
+        // Content to be encoded in the QR code (JSON string)
+        const qrContent = JSON.stringify({
+            id: asset.id,
+            kode: asset.kode_aset,
+            nama: asset.nama_aset
+        });
+
+        // Open a new window for printing
+        const printWindow = window.open('', '', 'width=400,height=500');
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Cetak Aset QR</title>
+                <style>
+                    body { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; }
+                    img { max-width: 150px; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto; border-radius: 8px; }
+                    h3 { margin-bottom: 5px; color: #003366; }
+                    p { margin: 5px 0; font-size: 14px; }
+                    canvas { margin-top: 15px; border: 1px solid #eee; padding: 5px; border-radius: 8px; }
+                </style>
+            </head>
+            <body>
+                ${asset.gambar_url ? `<img src="${asset.gambar_url}" alt="Gambar Aset">` : `<img src="https://placehold.co/150x100/CCCCCC/000000?text=No+Image" alt="No Image Available">`}
+                <h3>${asset.nama_aset}</h3>
+                <p><strong>Kode:</strong> ${asset.kode_aset}</p>
+                <p><strong>Departemen:</strong> ${asset.departemen}</p>
+                <canvas id="qrCodeCanvasPrint"></canvas>
+            </body>
+            </html>
+        `);
+        printWindow.document.close(); // Close the document to ensure content is rendered
+
+        // Generate QR code on the canvas in the new window
+        const qrCanvas = printWindow.document.getElementById('qrCodeCanvasPrint');
+        QRCode.toCanvas(qrCanvas, qrContent, { width: 200 }, (err) => {
+            if (err) {
+                console.error("QR Code generation error:", err);
+                showNotification('Gagal membuat QR Code.', 'error');
+            } else {
+                // Focus and print the window after QR code is generated
+                printWindow.focus();
+                printWindow.print();
+                printWindow.close(); // Close the print window after printing
+                showNotification('QR Code berhasil dicetak.', 'success');
+            }
+        });
+    }
+
+    /**
+     * Toggles dark mode on/off.
+     */
+    function toggleDarkMode() {
+        document.body.classList.toggle('dark-mode');
+        // Save user preference to localStorage
+        if (document.body.classList.contains('dark-mode')) {
+            localStorage.setItem('theme', 'dark');
+        } else {
+            localStorage.setItem('theme', 'light');
+        }
+    }
+
+    /**
+     * Initializes and starts the QR code scanner.
+     */
+    function startScanner() {
+        showPage(scannerSection); // Show scanner section
+        showNotification('Memulai scanner...', 'info');
+
+        // Initialize Html5QrcodeScanner
+        html5QrCode = new Html5Qrcode("reader");
+
+        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+            stopScanner(); // Stop scanner once a QR code is detected
+            try {
+                const assetData = JSON.parse(decodedText);
+                if (assetData.id) {
+                    showNotification(`Aset "${assetData.nama}" ditemukan!`, 'success');
+                    populateFormForEdit(assetData.id); // Populate form with scanned asset data
+                } else {
+                    showNotification('Format QR Code tidak valid. QR Code tidak berisi ID aset.', 'error');
+                }
+            } catch (e) {
+                showNotification('Gagal membaca data dari QR Code. Pastikan formatnya benar.', 'error');
+                console.error("Error parsing QR Code JSON:", e);
+            }
+        };
+
+        // Start scanning with environment camera (rear camera on mobile)
+        html5QrCode.start(
+            { facingMode: "environment" }, // Use rear camera
+            {
+                fps: 10, // Frames per second for scanning
+                qrbox: { width: 250, height: 250 } // Bounding box for QR code detection
+            },
+            qrCodeSuccessCallback,
+            (errorMessage) => {
+                // Optional: handle scan error (e.g., no QR code found)
+                // console.warn(`QR Code Scan Error: ${errorMessage}`);
+            }
+        ).catch(err => {
+            showNotification('Gagal memulai scanner. Pastikan Anda mengizinkan akses kamera.', 'error');
+            console.error("Error starting scanner:", err);
+            showPage(mainContainer); // Go back to main page if scanner fails to start
+        });
+    }
+
+    /**
+     * Stops the QR code scanner and hides the scanner section.
+     */
+    function stopScanner() {
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().then(() => {
+                scannerSection.classList.add('hidden');
+                showNotification('Scanner dihentikan.', 'info');
+            }).catch(err => {
+                console.error("Gagal menghentikan scanner:", err);
+                scannerSection.classList.add('hidden'); // Hide even if stop fails
+            });
+        } else {
+            scannerSection.classList.add('hidden');
+        }
+    }
+
+    // --- 4. CUSTOM CONFIRMATION MODAL FUNCTIONS ---
+
+    /**
+     * Shows the custom confirmation modal.
+     * @param {string} id - The ID of the item to confirm deletion for.
+     */
+    function showConfirmationModal(id) {
+        assetIdToDelete = id; // Store the ID
+        confirmationModal.classList.remove('hidden');
+    }
+
+    /**
+     * Hides the custom confirmation modal.
+     */
+    function hideConfirmationModal() {
+        confirmationModal.classList.add('hidden');
+        assetIdToDelete = null; // Clear the stored ID
+    }
+
+    // --- 5. OTENTIKASI & EVENT LISTENERS ---
+
+    // Supabase Authentication State Change Listener
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+        if (session) {
+            // User is logged in
+            loginSection.classList.add('hidden');
+            globalControls.classList.remove('hidden');
+            userEmailSpan.textContent = session.user.email; // Display user email
+            showPage(mainContainer); // Show main application content
+            renderDashboard(); // Render dashboard charts
+        } else {
+            // User is logged out
+            loginSection.classList.remove('hidden');
+            showPage(null); // Hide all main content pages
+            globalControls.classList.add('hidden');
+            userEmailSpan.textContent = ''; // Clear user email
+        }
+    });
+
+    // Check for dark mode preference on load
+    document.addEventListener('DOMContentLoaded', () => {
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+    });
+
+    // Event Listeners
+    loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        showNotification('Mencoba login...', 'info');
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) {
+            showNotification('Login gagal: ' + error.message, 'error');
+        } else {
+            showNotification('Login berhasil!', 'success');
+        }
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+        showNotification('Logging out...', 'info');
+        const { error } = await supabaseClient.auth.signOut();
+        if (error) {
+            showNotification('Gagal logout: ' + error.message, 'error');
+        } else {
+            showNotification('Berhasil logout.', 'success');
+        }
+    });
+
+    addAssetForm.addEventListener('submit', handleFormSubmit);
+
+    viewReportBtn.addEventListener('click', () => {
+        showPage(reportContainer);
+        populateFilterOptions(); // Populate filters when report page is viewed
+        generateAssetReport(); // Generate report
+    });
+
+    viewImportBtn.addEventListener('click', () => showPage(importContainer));
+
+    // Event listener for all "Kembali" buttons
+    backToMainButtons.forEach(button => {
+        button.addEventListener('click', () => showPage(mainContainer));
+    });
+
+    applyFilterBtn.addEventListener('click', generateAssetReport); // Apply filters and regenerate report
+
+    // Event delegation for report table actions (Edit, Delete, Print)
+    reportContent.addEventListener('click', function(event) {
+        const button = event.target.closest('button');
+        if (!button) return; // Not a button click
+
+        const id = button.dataset.id; // Get asset ID from data-id attribute
+
+        if (button.matches('.print-btn')) {
+            generateAndPrint(id);
+        } else if (button.matches('.edit-btn')) {
+            populateFormForEdit(id);
+        } else if (button.matches('.delete-btn')) {
+            showConfirmationModal(id); // Show custom confirmation modal
+        }
+    });
+
+    exportBtn.addEventListener('click', exportToCsv);
+
+    darkModeToggle.addEventListener('click', toggleDarkMode);
+
+    importCsvBtn.addEventListener('click', handleCsvImport);
+
+    scanAssetBtn.addEventListener('click', startScanner);
+
+    closeScannerBtn.addEventListener('click', stopScanner);
+
+    // Confirmation Modal Event Listeners
+    confirmDeleteBtn.addEventListener('click', () => {
+        if (assetIdToDelete) {
+            deleteAsset(assetIdToDelete);
+            hideConfirmationModal();
+        }
+    });
+
+    cancelDeleteBtn.addEventListener('click', () => {
+        hideConfirmationModal();
+        showNotification('Penghapusan aset dibatalkan.', 'info');
+    });
+
+</script>
+</body>
+</html>

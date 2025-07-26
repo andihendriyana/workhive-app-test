@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Struktur Organisasi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <link rel="stylesheet" href="style.css"> <!-- Pastikan path ini benar -->
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; }
+        /* Gaya tambahan untuk node Org Chart jika diperlukan */
+        .google-visualization-orgchart-node {
+            background-color: #e0f2fe; /* blue-100 */
+            border: 1px solid #90caf9; /* blue-200 */
+            border-radius: 8px;
+            padding: 10px 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 14px;
+            color: #333;
+        }
+        .google-visualization-orgchart-node.google-visualization-orgchart-nodesel {
+            background-color: #bbdefb; /* blue-200 */
+            border: 1px solid #2196f3; /* blue-500 */
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-poppins">
+
+    <div class="container mx-auto p-8">
+        <div class="bg-white p-8 rounded-2xl shadow-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-gray-800">Struktur Organisasi</h1>
+                <a href="index.html" class="text-sm text-blue-600 hover:underline">&larr; Kembali ke Dashboard</a>
+            </div>
+            
+            <div id="chart_div" style="width: 100%; height: 500px;">
+                <p class="text-center text-gray-500">Memuat struktur organisasi...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://nvtedibubuiykovrtfiv.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52dGVkaWJ1YnVpeWtvdnJ0Zml2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxOTk5MzQsImV4cCI6MjA2Nzc3NTkzNH0.s5-CtQuXYAf1hQcRwljYhROibzm9U65XGxtD7LJeNVU';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // 1. Muat library Google Charts
+        google.charts.load('current', {packages:['orgchart']});
+        google.charts.setOnLoadCallback(drawChart);
+
+        // 2. Fungsi untuk menggambar bagan
+        async function drawChart() {
+            const chartDiv = document.getElementById('chart_div');
+            chartDiv.innerHTML = '<p class="text-center text-gray-500">Memuat struktur organisasi...</p>'; // Reset loading state
+            console.log("Drawing organization chart..."); // Debugging
+
+            try {
+                const chart = new google.visualization.OrgChart(chartDiv);
+                const data = new google.visualization.DataTable();
+                data.addColumn('string', 'Name');
+                data.addColumn('string', 'Manager');
+                data.addColumn('string', 'ToolTip');
+
+                // 3. Ambil data karyawan dari Supabase
+                console.log("Fetching employees for org chart..."); // Debugging
+                const { data: employees, error } = await supabaseClient
+                    .from('employees')
+                    .select('id, nama_lengkap, jabatan, manager_id'); // Menggunakan nama kolom yang benar
+
+                console.log("Employees Data for Org Chart:", employees); // Debugging
+                console.log("Employees Error for Org Chart:", error); // Debugging
+
+                if (error) {
+                    throw error;
+                }
+                if (!employees || employees.length === 0) {
+                    chartDiv.innerHTML = '<p class="text-gray-500">Tidak ada data karyawan untuk membuat struktur organisasi.</p>';
+                    return;
+                }
+
+                // 4. Susun data sesuai format yang dibutuhkan Google Charts
+                // Format: [ {v: 'ID_Karyawan', f: 'Nama<div style="font-style:italic;">Jabatan</div>'}, 'ID_Manajer', 'Tooltip (Jabatan)']
+                employees.forEach(emp => {
+                    // Pastikan manager_id adalah string UUID atau null
+                    const managerId = emp.manager_id ? String(emp.manager_id) : ''; // Kosong jika tidak ada manajer (root)
+                    
+                    // Gunakan ID karyawan sebagai nilai 'v' untuk memastikan keunikan node
+                    data.addRow([
+                        { v: String(emp.id), f: `${emp.nama_lengkap}<div style="color:gray; font-style:italic">${emp.jabatan}</div>` },
+                        managerId,
+                        emp.jabatan
+                    ]);
+                });
+
+                // 5. Gambar bagan
+                chart.draw(data, {
+                    allowHtml: true,
+                    nodeClass: 'google-visualization-orgchart-node', // Kelas CSS kustom
+                    selectedNodeClass: 'google-visualization-orgchart-node google-visualization-orgchart-nodesel', // Kelas CSS kustom
+                    size: 'large' // Ukuran node
+                });
+                console.log("Organization chart drawn successfully."); // Debugging
+
+            } catch (e) {
+                console.error("Caught error in drawChart:", e);
+                chartDiv.innerHTML = `<p class="text-red-500">Gagal memuat struktur organisasi: ${e.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
