@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laporan Payroll</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Pastikan file style.css Anda ada di direktori yang sama -->
+    <link rel="stylesheet" href="style.css"> 
+    <style>
+        /* Mengatur font Poppins sebagai font default */
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        /* Styling tambahan untuk tombol */
+        .btn-primary {
+            @apply bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-300 ease-in-out;
+        }
+        .btn-secondary {
+            @apply bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400 transition duration-300 ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <div class="container mx-auto p-4 sm:p-8">
+        <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Laporan Ringkasan Payroll</h1>
+                    <p class="text-sm sm:text-base text-gray-500">Pilih periode untuk membuat laporan kehadiran dan perhitungan gaji.</p>
+                </div>
+                <a href="index.html" class="mt-4 sm:mt-0 text-sm text-blue-600 hover:underline">&larr; Kembali ke Dashboard</a>
+            </div>
+
+            <form id="report-form" class="flex flex-col sm:flex-row items-end space-y-4 sm:space-y-0 sm:space-x-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                <div class="w-full sm:w-auto">
+                    <label for="start-date" class="block mb-2 text-sm font-medium text-gray-900">Tanggal Mulai</label>
+                    <input type="date" id="start-date" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                </div>
+                <div class="w-full sm:w-auto">
+                    <label for="end-date" class="block mb-2 text-sm font-medium text-gray-900">Tanggal Selesai</label>
+                    <input type="date" id="end-date" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" required>
+                </div>
+                <button type="submit" class="btn-primary w-full sm:w-auto py-2.5 px-4">Buat Laporan</button>
+                <button type="button" id="export-btn" class="btn-secondary w-full sm:w-auto py-2.5 px-4 bg-green-500 text-white hover:bg-green-600">Ekspor CSV</button>
+            </form>
+
+            <div class="overflow-x-auto rounded-lg shadow">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Nama Karyawan</th>
+                            <th scope="col" class="px-6 py-3">Hari Kerja</th>
+                            <th scope="col" class="px-6 py-3">Terlambat (Menit)</th>
+                            <th scope="col" class="px-6 py-3">Cuti</th>
+                            <th scope="col" class="px-6 py-3">Izin/Sakit/Alpha</th> <!-- Kolom Baru -->
+                            <th scope="col" class="px-6 py-3">Total Jam Kerja</th>
+                            <th scope="col" class="px-6 py-3">Gaji Pokok</th>
+                            <th scope="col" class="px-6 py-3">Tunjangan</th>
+                            <th scope="col" class="px-6 py-3">Potongan</th>
+                            <th scope="col" class="px-6 py-3">BPJS (Potongan)</th>
+                            <th scope="col" class="px-6 py-3">PPh21</th>
+                            <th scope="col" class="px-6 py-3">Gaji Bersih</th>
+                            <th scope="col" class="px-6 py-3">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-tbody" class="bg-white divide-y divide-gray-200">
+                        <tr><td colspan="12" class="px-6 py-4 text-center text-gray-500">Silakan pilih periode dan buat laporan.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="loading-indicator" class="hidden text-center mt-4 text-blue-600">
+                <i class="fas fa-spinner fa-spin mr-2"></i>Memuat laporan...
+            </div>
+            <div id="error-message" class="hidden text-center p-3 mt-4 bg-red-100 text-red-700 rounded-lg"></div>
+        </div>
+    </div>
+    
+    <!-- Modal untuk Slip Gaji -->
+    <div id="payslip-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-11/12 max-w-2xl relative">
+            <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">Slip Gaji</h2>
+            <div id="payslip-content" class="space-y-3 text-gray-700">
+                <!-- Konten slip gaji akan dimuat di sini -->
+            </div>
+            <button id="print-payslip-btn" class="mt-6 w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-300 ease-in-out">Cetak Slip Gaji</button>
+        </div>
+    </div>
+
+    <!-- Memuat script payroll.js -->
+    <script src="payroll.js"></script>
+</body>
+</html>

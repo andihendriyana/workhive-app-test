@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riwayat Absensi Saya</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css"> <!-- Pastikan path ini benar -->
+    <style>
+        body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; }
+        .status-badge { @apply px-2 py-1 text-xs font-semibold rounded-full; }
+        .time-status-on-time { @apply text-green-600 font-bold; }
+        .time-status-late { @apply text-red-600 font-bold; }
+    </style>
+</head>
+<body class="bg-gray-50 font-poppins">
+
+    <div class="container mx-auto p-8 max-w-4xl">
+        <div class="bg-white p-8 rounded-2xl shadow-lg">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800">Riwayat Absensi Saya</h1>
+                    <p class="text-gray-500">Lihat semua catatan absensi Anda.</p>
+                </div>
+                <a href="index.html" class="text-sm text-blue-600 hover:underline">&larr; Kembali ke Dashboard</a>
+            </div>
+
+            <div id="status-message" class="hidden mb-4 p-4 text-sm rounded-lg"></div>
+
+            <div class="overflow-x-auto rounded-lg shadow">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Tanggal</th>
+                            <th scope="col" class="px-6 py-3">Clock In</th>
+                            <th scope="col" class="px-6 py-3">Clock Out</th>
+                            <th scope="col" class="px-6 py-3">Durasi (Jam)</th>
+                            <th scope="col" class="px-6 py-3">Status</th>
+                            <th scope="col" class="px-6 py-3">Catatan</th>
+                            <th scope="col" class="px-6 py-3">Selfie</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendance-history-tbody">
+                        <tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Memuat riwayat absensi...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="riwayat-absensi.js"></script>
+</body>
+</html>

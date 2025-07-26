@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riwayat Pengajuan Cuti</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-50 font-poppins">
+
+    <div class="container mx-auto p-8">
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="p-6 flex justify-between items-center">
+               <h2 class="text-xl font-semibold text-gray-800">Riwayat Pengajuan Cuti Anda</h2>
+               <a href="index.html" class="text-sm text-blue-600 hover:underline">&larr; Kembali ke Dashboard</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Tanggal Diajukan</th>
+                            <th scope="col" class="px-6 py-3">Tanggal Mulai</th>
+                            <th scope="col" class="px-6 py-3">Tanggal Selesai</th>
+                            <th scope="col" class="px-6 py-3">Alasan</th>
+                            <th scope="col" class="px-6 py-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leave-history-tbody">
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 text-center text-gray-500">Memuat riwayat...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="riwayat-cuti.js"></script>
+</body>
+</html>
